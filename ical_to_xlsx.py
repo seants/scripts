@@ -5,13 +5,13 @@ from ics import Calendar
 import openpyxl
 import os
 import os.path
+from stat import ST_CTIME
 import sys
 import zipfile
 
-# TODO: fail immediately if filename already exists
-
 ZIP_DIRECTORY = 'E:\\Downloads'
-ZIP_ICAL_STR = '.ical.zip'
+ZIP_STR = '.zip'
+ICAL_STR = '.ical'
 OUT_FILE_TYPE = '.xlsx'
 
 SECONDS_PER_MINUTE = 60
@@ -23,20 +23,22 @@ def get_desired_date():
     if len(sys.argv) == 1:
         return arrow.now().replace(months=-1)
     elif len(sys.argv) == 3:
-        return arrow.get(int(sys.argv[1]), int(sys.argv[2]), 1, tzinfo=tz.tzlocal())
+        year = int(sys.argv[1])
+        month = int(sys.argv[2])
+        if year < 1970 or year > 3000 or month < 1 or month > 12:
+            raise Exception("Unrecognized year and month: %i %i; expected date like 2016 5" % (year, month))
+        return arrow.get(year, month, 1, tzinfo=tz.tzlocal())
     else:
         raise Exception('Unrecognized number of command-line arguments: %i; expected 0 or 2' % (len(sys.argv) - 1))
 
 def get_zip_file_name():
     files = os.listdir(ZIP_DIRECTORY)
-    candidate_files = [filename for filename in files if ZIP_ICAL_STR in filename]
-    if len(candidate_files) == 1:
-        zip_file_name = candidate_files[0]
-    elif len(candidate_files) == 0:
+    candidate_files = [os.path.join(ZIP_DIRECTORY, filename) for filename in files if ZIP_STR in filename and ICAL_STR in filename]
+    if len(candidate_files) == 0:
         raise Exception('No .ical ZIP file found. Try downloading again, and make sure you are in the right directory: %s.' % ZIP_DIRECTORY)
-    else:
-        raise Exception('Multiple .ical ZIP files found in %s. Please delete all old .ical ZIP files.' % ZIP_DIRECTORY)
-    return os.path.join(ZIP_DIRECTORY, zip_file_name)
+    entries = [(os.stat(name), name) for name in candidate_files]
+    entries.sort(key=lambda tuple: tuple[0][ST_CTIME], reverse=True)
+    return entries[0][1]
 
 def get_ical_file_name(zip_file):
     ical_file_names = zip_file.namelist()
@@ -55,10 +57,10 @@ def strip_number(events):
         event.name = ''.join(filter(lambda a: not a.isnumeric(), event.name)).strip()
 
 def calculate_cost(event):
-    return event.duration.seconds / SECONDS_PER_MINUTE / MINUTES_PER_HOUR * COST_PER_HOUR
+    return 0 if 'consult' in event.name else \
+        event.duration.seconds / SECONDS_PER_MINUTE / MINUTES_PER_HOUR * COST_PER_HOUR
 
-def write_output(events, date):
-    name = date.format('YYYY MMMM') + OUT_FILE_TYPE
+def write_output(events, name):
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     
@@ -75,13 +77,22 @@ def get_desired_events(ical_file, date):
     strip_number(events)
     return events
 
+def get_output_name(date):
+    name = date.format('YYYY MMMM') + OUT_FILE_TYPE
+    files = os.listdir()
+    if name in files:
+        raise Exception('File %s already exists in current directory. Please delete' % name)
+    return name
+
 def main():
     desired_date = get_desired_date()
+    output_name = get_output_name(desired_date)
+
     # We need two files open at the same time: the zip file and the ical file,
     # so we used a nested with block.
     with zipfile.ZipFile(get_zip_file_name()) as zip_file:
         with zip_file.open(get_ical_file_name(zip_file)) as ical_file:        
-            write_output(get_desired_events(ical_file, desired_date), desired_date)
+            write_output(get_desired_events(ical_file, desired_date), output_name)
 
 if __name__ == '__main__':
   main()
