@@ -1,5 +1,4 @@
 import arrow
-import csv
 from dateutil import tz
 from ics import Calendar
 import openpyxl
@@ -9,15 +8,10 @@ from stat import ST_CTIME
 import sys
 import zipfile
 
-ZIP_DIRECTORY = 'E:\\Downloads'
+ZIP_DIRECTORY = 'C:\\Users\\Sean\\Downloads'
 ZIP_STR = '.zip'
 ICAL_STR = '.ical'
 OUT_FILE_TYPE = '.xlsx'
-
-SECONDS_PER_MINUTE = 60
-MINUTES_PER_HOUR = 60
-
-COST_PER_HOUR = 1
 
 def get_desired_date():
     if len(sys.argv) == 1:
@@ -56,18 +50,13 @@ def strip_number(events):
     for event in events:
         event.name = ''.join(filter(lambda a: not a.isnumeric(), event.name)).strip()
 
-def calculate_cost(event):
-    return 0 if 'consult' in event.name else \
-        event.duration.seconds / SECONDS_PER_MINUTE / MINUTES_PER_HOUR * COST_PER_HOUR
-
 def write_output(events, name):
     workbook = openpyxl.Workbook()
     worksheet = workbook.active
     
     for i, event in enumerate(events):
-        worksheet.append([event.name, event.begin.format('MMMM DD'), event.duration, calculate_cost(event)])
+        worksheet.append([event.name, event.begin.format('MMMM DD'), event.duration])
         worksheet["D%i" % (i + 1)].number_format
-    worksheet.append(["", "", "", "=SUM(D1:D%i)" % len(events)])
     workbook.save(name)
 
 def get_desired_events(ical_file, date):
@@ -78,10 +67,10 @@ def get_desired_events(ical_file, date):
     return events
 
 def get_output_name(date):
-    name = date.format('YYYY MMMM') + OUT_FILE_TYPE
-    files = os.listdir()
+    name = date.format('YYYY MM') + OUT_FILE_TYPE
+    files = os.listdir('.')
     if name in files:
-        raise Exception('File %s already exists in current directory. Please delete' % name)
+        raise Exception('File %s already exists in current directory. Please delete.' % name)
     return name
 
 def main():
