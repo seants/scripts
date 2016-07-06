@@ -5,4 +5,4 @@ Originally, there was a column that did cost-calculations based on the event dur
 
 To run, download the calendar ICS file from Google (it will come packaged in a zip file), modify the `ZIP_DIRECTORY` field with the location of the download, and run the script from the destination directory (where you want the xlsx file to be saved). By default, all events from the previous month are listed, but the month can be adjusted with command line parameters in the form of `python ical_to_xlsx.py 2016 7` for example.
 
-To install, run `pip install ics openpyxl`.
+To install the dependencies, run `pip install ics openpyxl`.
