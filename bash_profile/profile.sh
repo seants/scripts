@@ -1,0 +1,6 @@
+alias ll='ls -l'
+alias sv='source venv/bin/activate'
+alias eb='vim ~/.bash_profile'
+alias sb='source ~/.bash_profile'
+alias rms='rm -P'
+alias code='cd ~/Dropbox/Sean/Other/Code'
