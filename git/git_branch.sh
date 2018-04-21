@@ -1,1 +1,1 @@
-git checkout -b "seantsb/$1"
+git checkout -b "seants/$1"
